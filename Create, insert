@@ -1,0 +1,276 @@
+
+CREATE TABLE Rasy (
+    id_rasy SERIAL PRIMARY KEY,
+    nazev_rasy CHAR(25) NOT NULL
+);
+
+CREATE TABLE Onemocneni (
+    id_onemocneni SERIAL PRIMARY KEY,
+    jmeno CHAR(25) NOT NULL,
+    trvanlivost CHAR(25) -- např. "doživotní", "1 rok", atd.
+);
+
+CREATE TABLE Pozice (
+    id_pozice SERIAL PRIMARY KEY,
+    jmeno_pozice CHAR(25) NOT NULL,
+    plat_char decimal(8,2) NOT NULL-- např. tarifní třída nebo rozmezí platu
+);
+
+CREATE TABLE Chovatelska_stanice (
+    id_stanice SERIAL PRIMARY KEY,
+    nazev CHAR(25) NOT NULL
+);
+
+-- #############################################
+-- #              Lidé a role                  #
+-- #############################################
+
+CREATE TABLE Majitele (
+    id_majitele SERIAL PRIMARY KEY,
+    id_stanice INTEGER REFERENCES Chovatelska_stanice(id_stanice),
+    jmeno CHAR(25) NOT NULL,
+    prijmeni CHAR(25) NOT NULL,
+    telefon CHAR(20),
+    email CHAR(25)
+);
+
+CREATE TABLE Zamestnanci (
+    id_zamestnance SERIAL PRIMARY KEY,
+    id_pozice INTEGER REFERENCES Pozice(id_pozice),
+    jmeno CHAR(25) NOT NULL,
+    prijmeni CHAR(25) NOT NULL,
+    telefon CHAR(25),
+    email CHAR(25),
+    adresa TEXT,
+    cislo_uctu CHAR(25)
+);
+
+-- #############################################
+-- #               Zvířata                     #
+-- #############################################
+
+CREATE TABLE Psy (
+    id_pes SERIAL PRIMARY KEY,
+    id_majitele INTEGER REFERENCES Majitele(id_majitele),
+    id_rasy INTEGER REFERENCES Rasy(id_rasy),
+    jmeno CHAR(25) NOT NULL,
+    fena BOOLEAN NOT NULL,
+    datum_n DATE NOT NULL
+);
+
+
+CREATE TABLE Stenata (
+    id_stenete SERIAL PRIMARY KEY,
+    id_stanice INTEGER REFERENCES Chovatelska_stanice(id_stanice),
+odhadovana_cena DECIMAL(8,2),
+    jmeno_char CHAR(25),
+    datum_narozeni DATE NOT NULL
+);
+
+-- #############################################
+-- #             Provoz a záznamy              #
+-- #############################################
+
+CREATE TABLE Kryti (
+    id_kryti SERIAL PRIMARY KEY,
+    id_otec INTEGER REFERENCES Psy(id_pes),
+    id_matka INTEGER REFERENCES Psy(id_pes),
+    cena DECIMAL(10, 2) NOT NULL,
+    datum DATE NOT NULL
+);
+
+CREATE TABLE Prodeje (
+    id_prodeje SERIAL PRIMARY KEY,
+    id_stenete INTEGER REFERENCES Stenata(id_stenete),
+    id_zamestnance INTEGER REFERENCES Zamestnanci(id_zamestnance),
+    den_prodeje DATE NOT NULL,
+    cena DECIMAL(8, 2) NOT NULL
+);
+
+CREATE TABLE Ockovani_zaznamy (
+    id_ockovani SERIAL PRIMARY KEY,
+    id_onemocneni INTEGER REFERENCES Onemocneni(id_onemocneni),
+    id_pes INTEGER REFERENCES Psy(id_pes),
+    id_stenete INTEGER REFERENCES Stenata(id_stenete),
+    cena DECIMAL(8, 2) NOT NULL,
+    datum DATE NOT NULL
+    -- CHECK constraint pro zajištění, že je vyplněn buď id_pes NEBO id_stenete, ne oba nebo žádný
+    -- CONSTRAINT chk_pes_stenete CHECK ((id_pes IS NULL AND id_stenete IS NOT NULL) OR (id_pes IS NOT NULL AND id_stenete IS NULL))
+);
+
+-- #############################################
+-- #           Spojovací tabulky (M:N)         #
+-- #############################################
+
+CREATE TABLE Zajemci_majitele (
+    id_zajemce_majitele SERIAL PRIMARY KEY,=
+    jmeno CHAR(25) NOT NULL,
+    prijmeni CHAR(25) NOT NULL,
+    telefon CHAR(25) NOT NULL,
+
+    email CHAR(50),
+    adresa TEXT
+);
+
+CREATE TABLE Zajemci_majitele_Stene (
+    id_zajemce_majitele INTEGER REFERENCES Zajemci_majitele(id_zajemce_majitele),
+    id_stenete INTEGER REFERENCES Stenata(id_stenete),
+    prodeno BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (id_zajemce_majitele, id_stenete)
+);
+
+
+-- RASY (15)
+INSERT INTO Rasy (nazev_rasy) VALUES ('Německý ovčák'), ('Zlatý retrívr'), ('Jezevčík'), ('Border kolie'), ('Labrador'), ('Bišonek'), ('Mops'), ('Bernský salašnický'), ('Bígl'), ('Boxer'), ('Čivava'), ('Pudl'), ('Francouzský buldoček'), ('Sibiřský husky'), ('Shiba Inu');
+
+-- POZICE (7)
+INSERT INTO Pozice (jmeno_pozice, plat_char) VALUES ('Vedoucí stanice', 48000.00), ('Ošetřovatel', 28000.00), ('Veterinář', 55000.00), ('Administrativa', 32000.00), ('Noční hlídač', 24000.00), ('Trenér', 35000.00), ('Pomocná síla', 21000.00);
+
+-- ONEMOCNĚNÍ (12)
+INSERT INTO Onemocneni (jmeno, trvanlivost) VALUES ('Vzteklina', '2 roky'), ('Psinka', '1 rok'), ('Parvoviróza', '1 rok'), ('Lymská borelióza', '1 rok'), ('Dysplazie kyčle', 'doživotní'), ('Psincový kašel', '6 měsíců'), ('Tasemnice', 'do vyléčení'), ('Zánět dásní', 'do vyléčení'), ('Katarakt', 'doživotní'), ('Otitis', 'do vyléčení'), ('Leptospiróza', '1 rok'), ('Hepatitida', '1 rok');
+
+-- CHOVATELSKÉ STANICE (10)
+INSERT INTO Chovatelska_stanice (nazev) VALUES ('Zlatý potok'), ('Pod dubem'), ('Věrný přítel'), ('Psí ráj'), ('Severní vítr'), ('Louka snů'), ('Divoká řeka'), ('Bílý tesák'), ('Šťastný čumák'), ('Věrná stráž');
+
+-- 1. MAJITELÉ (Realistická česká jména)
+INSERT INTO Majitele (id_stanice, jmeno, prijmeni, telefon, email) VALUES
+(1, 'Jiří', 'Krátký', '720123456', 'jiri.kratky@seznam.cz'),
+(2, 'Marie', 'Černá', '721987654', 'cerna.m@gmail.com'),
+(3, 'Petr', 'Veselý', '722456789', 'vesely@post.cz'),
+(4, 'Jana', 'Němcová', '723159263', 'jana.nemcova@atlas.cz'),
+(5, 'Martin', 'Pokorný', '724852963', 'martin.pokor@email.cz'),
+(6, 'Eva', 'Dvořáková', '725369147', 'eva.dvorak@centrum.cz'),
+(7, 'Pavel', 'Horák', '726741852', 'pavel.horak@volny.cz'),
+(8, 'Hana', 'Svobodová', '727951357', 'svobodova.h@seznam.cz'),
+(9, 'Tomáš', 'Marek', '728159487', 'tomas.marek@gmail.com'),
+(10, 'Lucie', 'Bartošová', '729357486', 'lucie.b@post.cz'),
+(1, 'Jakub', 'Sedláček', '730456123', 'sedlacek.kuba@email.cz'),
+(2, 'Alena', 'Krejčí', '731654321', 'krejci.alena@seznam.cz'),
+(3, 'Michal', 'Beneš', '732789456', 'benes.m@centrum.cz'),
+(4, 'Lenka', 'Zemanová', '733321654', 'lenka.zeman@gmail.com'),
+(5, 'David', 'Kolář', '734147258', 'kolar.d@volny.cz'),
+(6, 'Veronika', 'Kučerová', '735258369', 'veronika.kuc@post.cz'),
+(7, 'Filip', 'Blažek', '736369147', 'blazek.f@email.cz'),
+(8, 'Barbora', 'Hájková', '737741258', 'hajkova.bara@seznam.cz'),
+(9, 'Ondřej', 'Král', '738852963', 'kral.ondrej@gmail.com'),
+(10, 'Kateřina', 'Malá', '739963147', 'katka.mala@post.cz'),
+(1, 'Stanislav', 'Vlček', '740159753', 'vlcek.stan@email.cz'),
+(2, 'Adéla', 'Šimková', '741357951', 'simkova.ad@seznam.cz');
+
+-- 2. PSY (Reálná jména psů)
+INSERT INTO Psy (id_majitele, id_rasy, jmeno, fena, datum_n) VALUES
+(1, 1, 'Bax', false, '2019-05-12'), (2, 2, 'Bella', true, '2020-08-20'),
+(3, 3, 'Max', false, '2018-02-14'), (4, 4, 'Daisy', true, '2021-01-05'),
+(5, 5, 'Buddy', false, '2019-11-30'), (6, 6, 'Luna', true, '2020-04-12'),
+(7, 7, 'Rocky', false, '2018-09-25'), (8, 8, 'Molly', true, '2021-12-01'),
+(9, 9, 'Charlie', false, '2019-06-18'), (10, 10, 'Lucy', true, '2020-07-22'),
+(11, 11, 'Jack', false, '2021-02-14'), (12, 12, 'Sadie', true, '2018-05-05'),
+(13, 13, 'Toby', false, '2019-10-10'), (14, 14, 'Sophie', true, '2022-03-30'),
+(15, 15, 'Cooper', false, '2020-01-15'), (1, 1, 'Argo', false, '2017-03-20'),
+(2, 2, 'Sisi', true, '2021-11-11'), (3, 3, 'Endy', false, '2018-08-08'),
+(4, 4, 'Peggy', true, '2020-12-24'), (5, 5, 'Blesk', false, '2019-04-04'),
+(6, 6, 'Zora', true, '2022-09-09'), (7, 7, 'Rex', false, '2016-12-15'),
+(8, 8, 'Aida', true, '2020-01-01'), (9, 9, 'Dan', false, '2021-05-05'),
+(10, 10, 'Gina', true, '2019-08-08');
+
+-- 3. ŠTĚŇATA (Vrh A, B, C...)
+INSERT INTO Stenata (id_stanice, cena_stenete, jmeno_char, datum_narozeni) VALUES
+(1, 18500, 'Aron', '2024-01-10'), (1, 18500, 'Aida', '2024-01-10'), (1, 17000, 'Abby', '2024-01-10'),
+(2, 22000, 'Baddy', '2024-01-15'), (2, 22000, 'Bára', '2024-01-15'), (2, 20500, 'Brit', '2024-01-15'), (2, 21000, 'Ben', '2024-01-15'),
+(3, 14500, 'Cid', '2024-02-01'), (3, 14500, 'Cira', '2024-02-01'), (3, 13000, 'César', '2024-02-01'),
+(4, 25000, 'Dante', '2024-02-10'), (4, 25000, 'Dora', '2024-02-10'), (4, 23000, 'Dixi', '2024-02-10'), (4, 24500, 'Dusty', '2024-02-10'), (4, 24000, 'Dan', '2024-02-10'),
+(1, 19500, 'Eliot', '2024-03-05'), (1, 19500, 'Enny', '2024-03-05'), (1, 18000, 'Egon', '2024-03-05'), (1, 19000, 'Elda', '2024-03-05'),
+(5, 12500, 'Falco', '2024-03-20'), (5, 12500, 'Fany', '2024-03-20'), (5, 11000, 'Fred', '2024-03-20'), (5, 12000, 'Fibi', '2024-03-20'), (5, 11500, 'Flíček', '2024-03-20'),
+(6, 28000, 'Goro', '2024-04-01'), (6, 28500, 'Gira', '2024-04-01'), (6, 27000, 'Gaston', '2024-04-01'), (6, 27500, 'Gwen', '2024-04-01'),
+(7, 15500, 'Herry', '2024-04-15'), (7, 15000, 'Hilda', '2024-04-15'), (7, 14000, 'Hugo', '2024-04-15'),
+(8, 17500, 'Ira', '2024-05-01'), (8, 17000, 'Igor', '2024-05-01'), (8, 16500, 'Iris', '2024-05-01'),
+(9, 21000, 'Jerry', '2024-05-10'), (9, 20000, 'Jola', '2024-05-10'), (9, 19500, 'Jack', '2024-05-10'), (9, 20500, 'Jenny', '2024-05-10');
+
+
+
+-- KRYTÍ (15) - Propojujeme ID psů (1-25)
+INSERT INTO Kryti (id_otec, id_matka, cena, datum)
+SELECT i, i+1, 5000 + (i * 100), '2023-01-01'::date + (i || ' weeks')::interval
+FROM generate_series(1, 15) s(i);
+
+-- PRODEJE (20)
+INSERT INTO Prodeje (id_stenete, id_zamestnance, den_prodeje, cena)
+SELECT i, (mod(i, 18) + 1), '2023-06-01'::date + (i || ' days')::interval, 12000 + (i * 200)
+FROM generate_series(1, 20) s(i);
+
+-- OČKOVÁNÍ (35) - Střídáme id_pes a id_stenete
+INSERT INTO Ockovani_zaznamy (id_onemocneni, id_pes, id_stenete, cena, datum)
+SELECT (mod(i, 12) + 1),
+       CASE WHEN (mod(i, 2) = 0) THEN (mod(i, 25) + 1) ELSE NULL END,
+       CASE WHEN (mod(i, 2) != 0) THEN (mod(i, 30) + 1) ELSE NULL END,
+       450.00 + (mod(i, 5) * 50),
+       '2023-01-01'::date + (i || ' weeks')::interval
+FROM generate_series(1, 35) s(i);
+
+INSERT INTO Zamestnanci (id_pozice, id_nadrizeneho, jmeno, prijmeni, telefon, email, adresa, cislo_uctu) VALUES
+-- 1. ÚROVEŇ: Generální ředitel (Dostane ID 1)
+(1, NULL, 'Karel', 'Vomáčka', '601222333', 'karel.vomacka@stanice.cz', 'Pražská 1, Brno', '123456/0100'),
+
+-- 2. ÚROVEŇ: Vedoucí (Podléhají Karlovi - ID 1) -> Dostanou ID 2, 3, 4
+(2, 1, 'Simona', 'Zelená', '602444555', 'simona.zelena@stanice.cz', 'Lesní 5, Praha', '987654/0800'),
+(2, 1, 'Oldřich', 'Nový', '603666777', 'oldrich.novy@stanice.cz', 'Polní 10, Ostrava', '456123/2010'),
+(2, 1, 'Ivana', 'Malá', '604888999', 'ivana.mala@stanice.cz', 'Krátká 2, Plzeň', '789321/0100'),
+
+-- 3. ÚROVEŇ: Ostatní pracovníci (Podléhají ID 2, 3 nebo 4) -> Dostanou ID 5 až 20
+(3, 2, 'Radim', 'Dlouhý', '605111000', 'radim.dlouhy@stanice.cz', 'Dlouhá 8, Liberec', '654789/0300'),
+(3, 2, 'Vendula', 'Tichá', '607333444', 'vendula.ticha@stanice.cz', 'Boční 4, Pardubice', '666777/5500'),
+(4, 3, 'Igor', 'Hrubý', '607555666', 'igor.hruby@stanice.cz', 'Polní 6, Jihlava', '777888/0100'),
+(4, 3, 'Sabina', 'Bartošová', '607777888', 'sabina.bartos@stanice.cz', 'U Lesa 10, Zlín', '888999/0800'),
+(5, 4, 'Vít', 'Janda', '607999000', 'vit.janda@stanice.cz', 'Horská 12, Trutnov', '999000/2010'),
+(5, 4, 'Klára', 'Málková', '608111222', 'klara.malka@stanice.cz', 'Široká 3, Most', '121212/0100'),
+(3, 2, 'Roman', 'Kříž', '606333444', 'roman.kriz@stanice.cz', 'Plzeňská 5, Praha', '111222/0100'),
+(4, 3, 'Adéla', 'Veselá', '606555666', 'adela.vesela@stanice.cz', 'Dlouhá 2, Brno', '222333/0800'),
+(5, 4, 'Marek', 'Havel', '606777888', 'marek.havel@stanice.cz', 'Rovná 9, Ostrava', '333444/2010'),
+(6, 2, 'Sára', 'Konečná', '606999000', 'sara.konecna@stanice.cz', 'Malá 1, Liberec', '444555/0100'),
+(6, 3, 'Patrik', 'Duda', '607111222', 'patrik.duda@stanice.cz', 'Nová 7, Olomouc', '555666/0300'),
+(7, 4, 'Alice', 'Dvořáková', '608555666', 'alice.dvorak@stanice.cz', 'Modrá 5, Písek', '343434/5500'),
+(7, 2, 'Radek', 'Urban', '608777888', 'radek.urban@stanice.cz', 'Úzká 2, Kladno', '454545/0100'),
+(7, 3, 'Nela', 'Pokorná', '608999000', 'nela.pokorna@stanice.cz', 'Luční 14, Kolín', '565656/0800'),
+(3, 4, 'Milan', 'Konečný', '778999000', 'milan.konec@stanice.cz', 'Lesní 1, Blansko', '121314/0100'),
+(4, 2, 'Ota', 'Šimek', '779333444', 'ota.simek@stanice.cz', 'Polní 2, Třebíč', '151617/0800');
+-- 1. Tabulka ZAJEMCI_MAJITELE (Lidé, kteří mají zájem o štěně)
+INSERT INTO Zajemci_majitele (jmeno, prijmeni, telefon, email, adresa) VALUES
+('Zdeněk', 'Hruška', '608111222', 'hruska@seznam.cz', 'Dělnická 5, Most'),
+('Monika', 'Bílá', '608333444', 'bila.m@post.cz', 'Slovenská 12, Cheb'),
+('Ondřej', 'Čech', '608555666', 'cech@gmail.com', 'Nádražní 3, Jihlava'),
+('Petra', 'Šťastná', '608777888', 'stastna@centrum.cz', 'Mírová 8, Zlín'),
+('Luděk', 'Marný', '608999000', 'marny@volny.cz', 'Krátká 1, Tábor'),
+('Boris', 'Uhlíř', '777111222', 'boris@seznam.cz', 'Vodní 5, Opava'),
+('Daniela', 'Kozlová', '777333444', 'daniela@post.cz', 'Školní 2, Karlovy Vary'),
+('Erik', 'Macek', '777555666', 'macek.e@gmail.com', 'Hlavní 10, Pardubice'),
+('Gita', 'Vránová', '777777888', 'vrana@centrum.cz', 'Jižní 8, Chomutov'),
+('Hugo', 'Beran', '777999000', 'beran@volny.cz', 'Severní 1, Teplice'),
+('Irena', 'Horáková', '778111222', 'irena@seznam.cz', 'Nová 5, Břeclav'),
+('Josef', 'Toman', '778333444', 'josef.t@post.cz', 'Stará 2, Hodonín'),
+('Kamila', 'Zemanová', '778555666', 'kamila@gmail.com', 'Dlouhá 10, Šumperk'),
+('Leoš', 'Válek', '778777888', 'valek@centrum.cz', 'Krátká 8, Vyškov'),
+('Milan', 'Konečný', '778999000', 'milan.k@volny.cz', 'Lesní 1, Blansko'),
+('Nina', 'Sýkorová', '779111222', 'nina@seznam.cz', 'Luční 5, Pelhřimov'),
+('Ota', 'Šimek', '779333444', 'simek.o@post.cz', 'Polní 2, Třebíč'),
+('Pavel', 'Hájek', '779555666', 'hajek.p@gmail.com', 'U Dubu 10, Sušice'),
+('Quido', 'Němec', '779777888', 'quido@centrum.cz', 'Kopecká 8, Prachatice'),
+('Renáta', 'Tichá', '779999000', 'renata@volny.cz', 'Údolní 1, Benešov');
+
+-- 2. Spojovací tabulka ZAJEMCI_MAJITELE_STENE (M:N vazba)
+-- Propojujeme zájemce (1-20) se štěňaty (id_stenete 1-20 z dřívějších insertů)
+INSERT INTO Zajemci_majitele_Stene (id_zajemce_majitele, id_stenete, prodeno) VALUES
+(1, 1, TRUE),   (1, 2, FALSE),  -- Zdeněk chce dvě štěňata, jedno už koupil
+(2, 2, TRUE),                   -- Monika koupila štěně č. 2
+(3, 3, FALSE),  (4, 3, FALSE),  -- O jedno štěně (č. 3) mají zájem dva lidé (bitva!)
+(5, 5, TRUE),   (6, 6, TRUE),
+(7, 7, FALSE),  (8, 8, TRUE),
+(9, 9, FALSE),  (10, 10, TRUE),
+(11, 11, FALSE), (12, 12, TRUE),
+(13, 13, FALSE), (14, 14, TRUE),
+(15, 15, FALSE), (16, 16, TRUE),
+(17, 17, FALSE), (18, 18, TRUE),
+(19, 19, FALSE), (20, 20, TRUE);
+
+
+
+
