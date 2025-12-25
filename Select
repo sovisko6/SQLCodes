@@ -1,0 +1,83 @@
+WITH Statistiky AS (
+    SELECT 'Rasy' AS tabulka, count(*) AS pocet FROM Rasy
+    UNION ALL SELECT 'Onemocneni', count(*) FROM Onemocneni
+    UNION ALL SELECT 'Pozice', count(*) FROM Pozice
+    UNION ALL SELECT 'Chovatelska_stanice', count(*) FROM Chovatelska_stanice
+    UNION ALL SELECT 'Majitele', count(*) FROM Majitele
+    UNION ALL SELECT 'Zamestnanci', count(*) FROM Zamestnanci
+    UNION ALL SELECT 'Psy', count(*) FROM Psy
+    UNION ALL SELECT 'Stenata', count(*) FROM Stenata
+    UNION ALL SELECT 'Kryti', count(*) FROM Kryti
+    UNION ALL SELECT 'Prodeje', count(*) FROM Prodeje
+    UNION ALL SELECT 'Ockovani_zaznamy', count(*) FROM Ockovani_zaznamy
+    UNION ALL SELECT 'Zajemci_majitele', count(*) FROM Zajemci_majitele
+    UNION ALL SELECT 'Zajemci_majitele_Stene', count(*) FROM Zajemci_majitele_Stene
+)
+SELECT tabulka, pocet FROM Statistiky
+UNION ALL
+SELECT '--- CELKOVÝ PRŮMĚR ---', ROUND(AVG(pocet), 2) FROM Statistiky;
+
+
+SELECT
+    (SELECT SUM(cena) FROM Prodeje) AS trzba_celkem_realna,
+    (SELECT SUM(cena_stenete)
+     FROM Stenata
+     WHERE id_stenete NOT IN (SELECT id_stenete FROM Prodeje)) AS hodnota_zbyvajicich_stenat,
+
+    ROUND(
+        (SELECT SUM(cena) FROM Prodeje) /
+        NULLIF((SELECT SUM(cena_stenete) FROM Stenata WHERE id_stenete NOT IN (SELECT id_stenete FROM Prodeje)), 0),
+    2) AS index_uspesnosti_prodeje;
+
+
+SELECT
+    cs.nazev AS stanice,
+    COUNT(DISTINCT p.id_pes) AS pocet_dospelych_psu,
+    COUNT(DISTINCT s.id_stenete) AS pocet_stenat,
+
+    (COUNT(DISTINCT p.id_pes) + COUNT(DISTINCT s.id_stenete)) AS celkem_zvirat,
+    RANK() OVER (ORDER BY (COUNT(DISTINCT p.id_pes) + COUNT(DISTINCT s.id_stenete)) DESC) AS poradi_velikosti
+FROM Chovatelska_stanice cs
+LEFT JOIN Majitele m ON cs.id_stanice = m.id_stanice
+LEFT JOIN Psy p ON m.id_majitele = p.id_majitele
+LEFT JOIN Stenata s ON cs.id_stanice = s.id_stanice
+GROUP BY cs.nazev;
+
+WITH RECURSIVE Organizace_Strom AS (
+    -- Základ: lidi, co nemají šéfa (top management)
+    SELECT id_zamestnance, jmeno, prijmeni, id_nadrizeneho, 1 AS uroven,
+           (jmeno || ' ' || prijmeni)::TEXT AS cesta
+    FROM Zamestnanci WHERE id_nadrizeneho IS NULL
+
+    UNION ALL
+
+    -- Rekurzivní část: připojování podřízených
+    SELECT z.id_zamestnance, z.jmeno, z.prijmeni, z.id_nadrizeneho, os.uroven + 1,
+           (os.cesta || ' -> ' || z.jmeno || ' ' || z.prijmeni)
+    FROM Zamestnanci z
+    JOIN Organizace_Strom os ON z.id_nadrizeneho = os.id_zamestnance
+)
+SELECT uroven, cesta FROM Organizace_Strom ORDER BY cesta;
+
+
+SELECT
+    cs.nazev AS stanice,
+    SUM(p.cena) AS celkova_trzba,
+    COUNT(p.id_prodeje) AS pocet_prodeju,
+    RANK() OVER (ORDER BY SUM(p.cena) DESC) AS poradi_uspesnosti
+FROM Chovatelska_stanice cs
+JOIN Stenata s ON cs.id_stanice = s.id_stanice
+JOIN Prodeje p ON s.id_stenete = p.id_stenete
+GROUP BY cs.nazev;
+
+SELECT jmeno_char
+FROM Stenata
+WHERE id_stenete IN (
+    SELECT id_stenete
+    FROM Prodeje
+    WHERE id_zamestnance IN (
+        SELECT id_zamestnance
+        FROM Zamestnanci
+        WHERE prijmeni = 'Zelená'
+    )
+);
