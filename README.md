@@ -1,1 +1,1 @@
-# SQLCodes
+# UJEP project for RDBS.
