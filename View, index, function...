@@ -1,0 +1,103 @@
+CREATE VIEW Pohled_Karta_Stenete AS
+SELECT
+    s.jmeno_char AS jmeno_stenete,
+    s.cena_stenete AS nabidkova_cena,
+    cs.nazev AS nazev_stanice,
+    p.cena AS finalni_prodejni_cena,
+    z.jmeno || ' ' || z.prijmeni AS prodal_zamestnanec
+FROM Stenata s
+-- 1. Tabulka: INNER JOIN zajistí, že štěně musí patřit do nějaké stanice
+INNER JOIN Chovatelska_stanice cs ON s.id_stanice = cs.id_stanice
+-- 2. Tabulka: LEFT JOIN zobrazí i neprodaná štěňata (p.cena bude NULL)
+LEFT JOIN Prodeje p ON s.id_stenete = p.id_stenete
+-- 3. Tabulka: LEFT JOIN připojí jméno zaměstnance, pokud prodej existuje
+LEFT JOIN Zamestnanci z ON p.id_zamestnance = z.id_zamestnance;
+
+
+CREATE UNIQUE INDEX idx_unikatni_email_majitele
+ON Majitele(email);
+
+CREATE UNIQUE INDEX idx_unikatni_jmeno_zamestnance
+ON Zamestnanci(prijmeni, jmeno);
+
+
+CREATE OR REPLACE FUNCTION Ziskej_Status_Majitele(v_id_majitele INT)
+RETURNS VARCHAR(50) AS $$
+DECLARE
+    v_celkova_utrata DECIMAL(12, 2);
+    v_status VARCHAR(50);
+BEGIN
+    -- Výpočet celkové útraty majitele (přes prodaná štěňata)
+    SELECT SUM(p.cena) INTO v_celkova_utrata
+    FROM Prodeje p
+    JOIN Stenata s ON p.id_stenete = s.id_stenete
+    JOIN Psy dospeli ON s.id_stanice = dospeli.id_majitele -- předpoklad vazby
+    WHERE dospeli.id_majitele = v_id_majitele;
+
+    -- Logika určení statusu
+    IF v_celkova_utrata IS NULL OR v_celkova_utrata = 0 THEN
+        v_status := 'Nový zákazník';
+    ELSIF v_celkova_utrata < 20000 THEN
+        v_status := 'Bronzový partner';
+    ELSIF v_celkova_utrata < 50000 THEN
+        v_status := 'Stříbrný partner';
+    ELSE
+        v_status := 'Zlatý VIP zákazník';
+    END IF;
+
+    RETURN v_status;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+SELECT jmeno, prijmeni, Ziskej_Status_Majitele(id_majitele) AS status_klienta
+FROM Majitele;
+
+
+CREATE OR REPLACE PROCEDURE Analyzuj_Majitele_Report() AS $$
+DECLARE
+    -- 1. Definice CURSORU
+    cur_majitele CURSOR FOR SELECT id_majitele, jmeno, prijmeni FROM Majitele;
+    v_id_majitele INT;
+    v_jmeno VARCHAR(50);
+    v_prijmeni VARCHAR(50);
+    v_utrata DECIMAL(12, 2);
+BEGIN
+    -- Začátek bloku s transakcí a ošetřením chyb
+    BEGIN
+        OPEN cur_majitele;
+        LOOP
+            FETCH cur_majitele INTO v_id_majitele, v_jmeno, v_prijmeni;
+            EXIT WHEN NOT FOUND;
+
+            -- Výpočet útraty (agregace z Prodejů)
+            SELECT SUM(p.cena) INTO v_utrata
+            FROM Prodeje p
+            JOIN Stenata s ON p.id_stenete = s.id_stenete
+            JOIN Chovatelska_stanice cs ON s.id_stanice = cs.id_stanice
+            JOIN Majitele m ON cs.id_stanice = m.id_stanice
+            WHERE m.id_majitele = v_id_majitele;
+
+            -- 2. Logika bez nové tabulky: Výpis reportu do konzole
+            IF v_utrata >= 25000 THEN
+                RAISE NOTICE 'Majitel % % (ID: %) je VIP zákazník s útratou: % Kč',
+                             v_jmeno, v_prijmeni, v_id_majitele, COALESCE(v_utrata, 0);
+            ELSE
+                RAISE NOTICE 'Majitel % % (ID: %) je standardní zákazník.',
+                             v_jmeno, v_prijmeni, v_id_majitele;
+            END IF;
+        END LOOP;
+        CLOSE cur_majitele;
+
+    EXCEPTION
+        -- 3. Ošetření chyb (RAISE/EXCEPTION)
+        WHEN OTHERS THEN
+            RAISE NOTICE 'Došlo k chybě při analýze: %. Operace přerušena.', SQLERRM;
+            -- Transakce se v proceduře při chybě v tomto bloku automaticky ROLLBACKuje
+    END;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CALL Analyzuj_Majitele_Report();
