@@ -1,0 +1,18 @@
+
+CREATE ROLE role_osetrovatel;
+
+GRANT SELECT ON Psy, Stenata, Rasy TO role_osetrovatel;-- Smí číst informace o zvířatech
+GRANT INSERT, SELECT ON Ockovani_zaznamy TO role_osetrovatel;
+
+
+CREATE USER jan WITH PASSWORD 'jan';
+
+GRANT role_osetrovatel TO jan;
+
+
+BEGIN;
+
+LOCK TABLE Psy IN ACCESS EXCLUSIVE MODE;
+
+
+COMMIT;
