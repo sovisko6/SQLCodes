@@ -1,0 +1,35 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String
+
+engine = create_engine('postgresql://jan:jan@localhost:5432/postgres')
+Session = sessionmaker(bind=engine)
+session = Session()
+Base = declarative_base()
+
+class Pes(Base):
+    __tablename__ = 'psy'
+    id_pes = Column(Integer, primary_key=True)
+    jmeno = Column(String)
+
+try:
+    print("--- Pokus o smazání psa (Zakázaná akce) ---")
+    
+    pes_ke_smazani = session.query(Pes).filter_by(id_pes=1).first()
+    
+    if pes_ke_smazani:
+
+        session.delete(pes_ke_smazani)
+        session.commit()
+        print("Chyba: Pes byl smazán? (To by se nemělo stát!)")
+    else:
+        print("Pes s tímto ID nebyl nalezen.")
+
+except Exception as e:
+    print("\nSTOP! Databáze Jana zastavila.")
+    print(f"Důvod chyby: {e}")
+
+    session.rollback()
+finally:
+    session.close()
