@@ -1,0 +1,40 @@
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Date
+from sqlalchemy.orm import declarative_base, sessionmaker
+from datetime import date
+
+# 1. Připojení k databázi
+# Ujistěte se, že údaje (jméno, heslo, DB) sedí na vaši lokální databázi
+engine = create_engine('postgresql://postgres:postgres@localhost:5432/postgres')
+Base = declarative_base()
+
+# 2. Rozšířená definice tabulky (Modelu)
+class Pes(Base):
+    __tablename__ = 'psy'
+    
+    id_pes = Column(Integer, primary_key=True)
+    jmeno = Column(String)
+    fena = Column(Boolean)
+    id_majitele = Column(Integer) 
+    id_rasy = Column(Integer)
+    datum_n = Column(Date)
+
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+novy_pes = Pes(
+    jmeno='Baryk', 
+    fena=False, 
+    id_majitele=1, 
+    id_rasy=1, 
+    datum_n=date(2021, 6, 15)
+)
+
+try:
+    session.add(novy_pes)
+    session.commit()
+    print(f"Pes {novy_pes.jmeno} (narozen {novy_pes.datum_n}) byl úspěšně uložen!")
+except Exception as e:
+    session.rollback()
+    print(f"Chyba při ukládání: {e}")
+    print("Tip: Zkontrolujte, zda existuje majitel s ID 1 a rasa s ID 1.")
