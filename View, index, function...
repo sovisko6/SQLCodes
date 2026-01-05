@@ -31,7 +31,7 @@ BEGIN
     SELECT SUM(p.cena) INTO v_celkova_utrata
     FROM Prodeje p
     JOIN Stenata s ON p.id_stenete = s.id_stenete
-    JOIN Psy dospeli ON s.id_stanice = dospeli.id_majitele -- předpoklad vazby
+    JOIN Psi dospeli ON s.id_stanice = dospeli.id_majitele -- předpoklad vazby
     WHERE dospeli.id_majitele = v_id_majitele;
 
     -- Logika určení statusu
