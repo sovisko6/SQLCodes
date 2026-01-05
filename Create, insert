@@ -49,7 +49,7 @@ CREATE TABLE Zamestnanci (
 -- #               Zvířata                     #
 -- #############################################
 
-CREATE TABLE Psy (
+CREATE TABLE Psi (
     id_pes SERIAL PRIMARY KEY,
     id_majitele INTEGER REFERENCES Majitele(id_majitele),
     id_rasy INTEGER REFERENCES Rasy(id_rasy),
@@ -73,8 +73,8 @@ odhadovana_cena DECIMAL(8,2),
 
 CREATE TABLE Kryti (
     id_kryti SERIAL PRIMARY KEY,
-    id_otec INTEGER REFERENCES Psy(id_pes),
-    id_matka INTEGER REFERENCES Psy(id_pes),
+    id_otec INTEGER REFERENCES Psi(id_pes),
+    id_matka INTEGER REFERENCES Psi(id_pes),
     cena DECIMAL(10, 2) NOT NULL,
     datum DATE NOT NULL
 );
@@ -90,7 +90,7 @@ CREATE TABLE Prodeje (
 CREATE TABLE Ockovani_zaznamy (
     id_ockovani SERIAL PRIMARY KEY,
     id_onemocneni INTEGER REFERENCES Onemocneni(id_onemocneni),
-    id_pes INTEGER REFERENCES Psy(id_pes),
+    id_pes INTEGER REFERENCES Psi(id_pes),
     id_stenete INTEGER REFERENCES Stenata(id_stenete),
     cena DECIMAL(8, 2) NOT NULL,
     datum DATE NOT NULL
@@ -157,8 +157,8 @@ INSERT INTO Majitele (id_stanice, jmeno, prijmeni, telefon, email) VALUES
 (1, 'Stanislav', 'Vlček', '740159753', 'vlcek.stan@email.cz'),
 (2, 'Adéla', 'Šimková', '741357951', 'simkova.ad@seznam.cz');
 
--- 2. PSY (Reálná jména psů)
-INSERT INTO Psy (id_majitele, id_rasy, jmeno, fena, datum_n) VALUES
+-- 2. PSi (Reálná jména psů)
+INSERT INTO Psi (id_majitele, id_rasy, jmeno, fena, datum_n) VALUES
 (1, 1, 'Bax', false, '2019-05-12'), (2, 2, 'Bella', true, '2020-08-20'),
 (3, 3, 'Max', false, '2018-02-14'), (4, 4, 'Daisy', true, '2021-01-05'),
 (5, 5, 'Buddy', false, '2019-11-30'), (6, 6, 'Luna', true, '2020-04-12'),
