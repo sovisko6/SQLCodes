@@ -1,7 +1,7 @@
 
 CREATE ROLE role_osetrovatel;
 
-GRANT SELECT ON Psy, Stenata, Rasy TO role_osetrovatel;-- Smí číst informace o zvířatech
+GRANT SELECT ON Psi, Stenata, Rasy TO role_osetrovatel;-- Smí číst informace o zvířatech
 GRANT INSERT, SELECT ON Ockovani_zaznamy TO role_osetrovatel;
 
 
@@ -12,7 +12,7 @@ GRANT role_osetrovatel TO jan;
 
 BEGIN;
 
-LOCK TABLE Psy IN ACCESS EXCLUSIVE MODE;
+LOCK TABLE Psi IN ACCESS EXCLUSIVE MODE;
 
 
 COMMIT;
