@@ -9,7 +9,7 @@ Base = declarative_base()
 
 # 2. Rozšířená definice tabulky (Modelu)
 class Pes(Base):
-    __tablename__ = 'psy'
+    __tablename__ = 'psi'
     
     id_pes = Column(Integer, primary_key=True)
     jmeno = Column(String)
