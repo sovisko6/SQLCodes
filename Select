@@ -5,7 +5,7 @@ WITH Statistiky AS (
     UNION ALL SELECT 'Chovatelska_stanice', count(*) FROM Chovatelska_stanice
     UNION ALL SELECT 'Majitele', count(*) FROM Majitele
     UNION ALL SELECT 'Zamestnanci', count(*) FROM Zamestnanci
-    UNION ALL SELECT 'Psy', count(*) FROM Psy
+    UNION ALL SELECT 'Psi', count(*) FROM Psi
     UNION ALL SELECT 'Stenata', count(*) FROM Stenata
     UNION ALL SELECT 'Kryti', count(*) FROM Kryti
     UNION ALL SELECT 'Prodeje', count(*) FROM Prodeje
@@ -39,7 +39,7 @@ SELECT
     RANK() OVER (ORDER BY (COUNT(DISTINCT p.id_pes) + COUNT(DISTINCT s.id_stenete)) DESC) AS poradi_velikosti
 FROM Chovatelska_stanice cs
 LEFT JOIN Majitele m ON cs.id_stanice = m.id_stanice
-LEFT JOIN Psy p ON m.id_majitele = p.id_majitele
+LEFT JOIN Psi p ON m.id_majitele = p.id_majitele
 LEFT JOIN Stenata s ON cs.id_stanice = s.id_stanice
 GROUP BY cs.nazev;
 
