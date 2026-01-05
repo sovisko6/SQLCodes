@@ -9,7 +9,7 @@ session = Session()
 Base = declarative_base()
 
 class Pes(Base):
-    __tablename__ = 'psy'
+    __tablename__ = 'psi'
     id_pes = Column(Integer, primary_key=True)
     jmeno = Column(String)
 
